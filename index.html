@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Opened-Bottle Label</title>
+<style>
+  /* ============ SETTINGS YOU MAY WANT TO CHANGE ARE IN THE <script> BELOW ============ */
+
+  :root {
+    --ink: #1c2530;
+    --muted: #5b6776;
+    --paper: #ffffff;
+    --bg: #e9edf2;
+    --line: #c5ced9;
+    --action: #1e4fd6;
+    --action-dark: #163ba3;
+    --amber: #a85a00;
+    --amber-bg: #fff4e0;
+    --danger: #a3261c;
+    --danger-bg: #fdecea;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    line-height: 1.4;
+  }
+
+  main {
+    max-width: 560px;
+    margin: 0 auto;
+    padding: 28px 20px 48px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .sub { margin: 0 0 24px; color: var(--muted); }
+
+  /* ---------- label preview (shown at 3x real size: 3in x 1.5in) ---------- */
+  .preview-wrap {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px 14px;
+    margin-bottom: 20px;
+  }
+  .preview-caption { margin: 0 0 10px; font-size: 0.85rem; color: var(--muted); }
+
+  .label-preview {
+    width: 288px;            /* 3 x 96px = 3in */
+    height: 144px;           /* 1.5in */
+    border: 2px dashed var(--ink);
+    border-radius: 6px;
+    padding: 0 9px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 700;
+    font-size: 20.4px;       /* 6.8pt x 3 */
+    line-height: 1.55;
+    white-space: nowrap;
+    background: #fff;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: block;
+    width: 100%;
+    border: 0;
+    border-radius: 10px;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+  .btn-primary {
+    background: var(--action);
+    color: #fff;
+    font-size: 1.6rem;
+    padding: 26px 16px;
+    margin-bottom: 14px;
+  }
+  .btn-primary:hover { background: var(--action-dark); }
+  .btn-primary small {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 500;
+    opacity: 0.92;
+    margin-top: 4px;
+  }
+
+  .btn-secondary {
+    background: var(--paper);
+    color: var(--ink);
+    border: 2px solid var(--ink);
+    font-size: 1.1rem;
+    padding: 14px 16px;
+  }
+  .btn-secondary:hover { background: #f3f5f8; }
+
+  .btn:disabled {
+    background: #d4dae2;
+    color: #78828f;
+    border-color: #d4dae2;
+    cursor: not-allowed;
+  }
+
+  /* ---------- pick-a-date panel ---------- */
+  #pickPanel[hidden] { display: none; }
+  #pickPanel {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px 20px 20px;
+    margin-top: 14px;
+  }
+  #pickPanel label { display: block; font-weight: 700; margin-bottom: 6px; }
+  #pickPanel input[type="date"] {
+    font: inherit;
+    font-size: 1.3rem;
+    padding: 10px 12px;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    width: 100%;
+    margin-bottom: 14px;
+  }
+  .btn-print-picked {
+    background: var(--ink);
+    color: #fff;
+    font-size: 1.3rem;
+    padding: 18px 16px;
+  }
+  .btn-print-picked:hover:not(:disabled) { background: #000; }
+
+  .msg {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+  .msg[hidden] { display: none; }
+  .msg.error { background: var(--danger-bg); color: var(--danger); }
+  .msg.info  { background: var(--amber-bg); color: var(--amber); }
+
+  .help {
+    margin-top: 28px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .help summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+  .help ol { padding-left: 20px; margin: 8px 0 0; }
+
+  /* ---------- print: only the label, at exactly 1in x 0.5in ---------- */
+  #printSheet { display: none; }
+
+  @page { size: 1in 0.5in; margin: 0; }
+
+  @media print {
+    html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+    body > *:not(#printSheet) { display: none !important; }
+    #printSheet {
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      width: 1in;
+      height: 0.5in;
+      padding: 0 0.04in;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 700;
+      font-size: 6.8pt;
+      line-height: 1.5;
+      white-space: nowrap;
+      color: #000;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+    }
+  }
+</style>
+</head>
+<body>
+
+<main>
+  <h1>Opened-bottle label</h1>
+  <p class="sub">Expiration is always 90 days after the date opened.</p>
+
+  <div class="preview-wrap">
+    <p class="preview-caption" id="previewCaption">Today's label (shown 3x actual size)</p>
+    <div class="label-preview" aria-live="polite">
+      <div id="pvOpened"></div>
+      <div id="pvExpires"></div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="printToday" type="button">
+    Print label for today
+    <small id="todayHint"></small>
+  </button>
+
+  <button class="btn btn-secondary" id="togglePick" type="button" aria-expanded="false">
+    Opened on a different day
+  </button>
+
+  <section id="pickPanel" hidden>
+    <label for="dateInput">Date opened</label>
+    <input type="date" id="dateInput">
+    <p class="msg error" id="dateError" hidden></p>
+    <p class="msg info" id="dateInfo" hidden></p>
+    <button class="btn btn-print-picked" id="printPicked" type="button" disabled>
+      Print label for this date
+    </button>
+  </section>
+
+  <details class="help">
+    <summary>Printing tips</summary>
+    <ol>
+      <li>In the print window, choose the <strong>ZD411</strong> printer.</li>
+      <li>Paper size should read <strong>1 x 0.5 in</strong>, margins <strong>None</strong>, scale <strong>100%</strong>.</li>
+      <li>Turn off "Headers and footers" if it is shown.</li>
+      <li>Click Print. Wrong output? Tell your supervisor, do not hand-correct the label.</li>
+    </ol>
+  </details>
+</main>
+
+<!-- This is the only thing that actually prints -->
+<div id="printSheet" aria-hidden="true"></div>
+
+<script>
+  // ===================== SETTINGS =====================
+  const SHELF_LIFE_DAYS = 90;          // expiration = opened date + this many days
+  const OPENED_TEXT     = "Opened:";   // first line prefix (e.g. "Date Opened:" is longer and shrinks poorly)
+  const EXPIRES_TEXT    = "Expires:";  // second line prefix (e.g. "Use By:")
+  // ====================================================
+
+  const $ = id => document.getElementById(id);
+  const pad = n => String(n).padStart(2, "0");
+
+  // Date helpers work on plain calendar dates in the computer's local time zone.
+  function startOfToday() {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+  function addDays(d, days) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+  }
+  function fmt(d) {                      // MM/DD/YYYY
+    return pad(d.getMonth() + 1) + "/" + pad(d.getDate()) + "/" + d.getFullYear();
+  }
+  function toInputValue(d) {             // YYYY-MM-DD for <input type=date>
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+  function parseInput(v) {               // "YYYY-MM-DD" -> local Date (or null)
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+    if (!m) return null;
+    return new Date(+m[1], +m[2] - 1, +m[3]);
+  }
+
+  function showPreview(opened, caption) {
+    $("pvOpened").textContent  = OPENED_TEXT  + " " + fmt(opened);
+    $("pvExpires").textContent = EXPIRES_TEXT + " " + fmt(addDays(opened, SHELF_LIFE_DAYS));
+    $("previewCaption").textContent = caption;
+  }
+
+  function doPrint(opened) {
+    const sheet = $("printSheet");
+    sheet.innerHTML = "";
+    const l1 = document.createElement("div");
+    const l2 = document.createElement("div");
+    l1.textContent = OPENED_TEXT  + " " + fmt(opened);
+    l2.textContent = EXPIRES_TEXT + " " + fmt(addDays(opened, SHELF_LIFE_DAYS));
+    sheet.append(l1, l2);
+    window.print();
+  }
+
+  // ---------- "today" mode ----------
+  let pickOpen = false;
+
+  function refreshToday() {
+    const t = startOfToday();
+    $("todayHint").textContent = fmt(t) + "  \u2192  expires " + fmt(addDays(t, SHELF_LIFE_DAYS));
+    if (!pickOpen) showPreview(t, "Today's label (shown 3x actual size)");
+    // keep date-picker limits current if the page was left open overnight
+    $("dateInput").max = toInputValue(t);
+    $("dateInput").min = toInputValue(addDays(t, -SHELF_LIFE_DAYS));
+    if (pickOpen) validatePicked();
+  }
+
+  $("printToday").addEventListener("click", () => {
+    const t = startOfToday();         // recalculated at click time, never stale
+    refreshToday();
+    doPrint(t);
+  });
+
+  // ---------- "pick a date" mode ----------
+  $("togglePick").addEventListener("click", () => {
+    pickOpen = !pickOpen;
+    $("pickPanel").hidden = !pickOpen;
+    $("togglePick").setAttribute("aria-expanded", String(pickOpen));
+    $("togglePick").textContent = pickOpen ? "Hide different-day option" : "Opened on a different day";
+    if (pickOpen) {
+      $("dateInput").focus();
+      validatePicked();
+    } else {
+      showPreview(startOfToday(), "Today's label (shown 3x actual size)");
+    }
+  });
+
+  function validatePicked() {
+    const err = $("dateError"), info = $("dateInfo"), btn = $("printPicked");
+    err.hidden = true; info.hidden = true;
+    const d = parseInput($("dateInput").value);
+    if (!d) {
+      btn.disabled = true;
+      $("pvOpened").textContent  = OPENED_TEXT  + " __/__/____";
+      $("pvExpires").textContent = EXPIRES_TEXT + " __/__/____";
+      $("previewCaption").textContent = "Pick a date to see the label";
+      return;
+    }
+    const today = startOfToday();
+    const earliest = addDays(today, -SHELF_LIFE_DAYS);
+    if (d > today) {
+      err.textContent = "That date is in the future. A bottle can't be opened on a date that hasn't happened yet.";
+      err.hidden = false; btn.disabled = true;
+      $("previewCaption").textContent = "Fix the date to continue";
+      return;
+    }
+    if (d < earliest) {
+      err.textContent = "That date is more than " + SHELF_LIFE_DAYS + " days ago, so the bottle would already be expired. Do not dispense it.";
+      err.hidden = false; btn.disabled = true;
+      $("previewCaption").textContent = "Fix the date to continue";
+      return;
+    }
+    showPreview(d, "Label for " + fmt(d) + " (shown 3x actual size)");
+    if (d.getTime() === today.getTime()) {
+      info.textContent = "That is today. The big blue button does the same thing in one click.";
+      info.hidden = false;
+    }
+    btn.disabled = false;
+  }
+
+  $("dateInput").addEventListener("input", validatePicked);
+  $("dateInput").addEventListener("change", validatePicked);
+
+  $("printPicked").addEventListener("click", () => {
+    const d = parseInput($("dateInput").value);
+    validatePicked();
+    if (d && !$("printPicked").disabled) doPrint(d);
+  });
+
+  // ---------- keep "today" fresh ----------
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshToday(); });
+  window.addEventListener("focus", refreshToday);
+  setInterval(refreshToday, 60 * 1000);
+  refreshToday();
+</script>
+</body>
+</html>
